@@ -7,14 +7,14 @@ clear;
 
 %% Paramètres de la colonies de fourmi
 
-nb_iteration = 10; %Nombre d'itération
+nb_iteration = 100; %Nombre d'itération
 nb_fourmi = 30; %Nombre de fourmis
 
 % Paramètre de pondération de la colonie
 
 alpha = 0.8;
-beta = 0.1;
-roh = 0.95; % Coefficient d'évaporation des phéromones
+beta = 0.2;
+roh = 0.55; % Coefficient d'évaporation des phéromones
 
 % Paramètres pour la recherche des coefficients du PID
 
