@@ -1,27 +1,31 @@
 %D'après l'algorithme de Mr.Ammar Al-Jodah
 %Il s'agit d'un algorithme AS un peu bizarre
 
+clc;
+clear;
+
+
 %% Paramètres de la colonies de fourmi
 
-nb_iteration = ; %Nombre d'itération
-nb_fourmi = ; %Nombre de fourmis
+nb_iteration = 10; %Nombre d'itération
+nb_fourmi = 30; %Nombre de fourmis
 
 % Paramètre de pondération de la colonie
 
-alpha = ;
-beta = ;
-roh = ; % Coefficient d'évaporation des phéromones
+alpha = 0.8;
+beta = 0.1;
+roh = 0.95; % Coefficient d'évaporation des phéromones
 
 % Paramètres pour la recherche des coefficients du PID
 
 nb_param = 3; %Nombre de paramètres -> P I D
 
 %Ici, on borne la valeur des coefficients possibles
-borne_inferieur = [0 0 0]; %Borne inférieur
-borne_superieur = [ 0 0 0]; %Borne supérieur
+borne_inferieur = [0.1 0.5 0.1]; %Borne inférieur
+borne_superieur = [5 10 0.8]; %Borne supérieur
 
 %Précision voulu pour les coefficients
-nb_noeud = ; % Plus le nombre de noeuds est élevé, plus la précision est grande
+nb_noeud = 1000; % Plus le nombre de noeuds est élevé, plus la précision est grande
 
 %% Initialisation des matrices et des variables internes
 
@@ -33,16 +37,16 @@ mat_proba = zeros(nb_noeud, nb_param); %Probabilité d'emprunter chaque noeuds.
 
 %Matrice phéromones
 mat_phero = zeros(nb_noeud, nb_param); %Matrice des phéromones
-mat_phero_Calcul = zeros(nb_noeuds, nb_param); %Matrice de calcul des phéromones déposés
+mat_phero_Calcul = zeros(nb_noeud, nb_param); %Matrice de calcul des phéromones déposés
 %Couts des chemins A VOIR PLUS TARS
 mat_cout = zeros(nb_fourmi, 1);
-meilleur_cout_ind = ;
-meilleur_cout_prev = ;
-meilleur_cout = ;
+meilleur_cout_ind = inf;
+meilleur_cout_prev = inf;
+meilleur_cout = inf;
 
-pire_cout = ;
-pire_cout_ind = ;
-pire_cout_prev = ;
+pire_cout = inf;
+pire_cout_ind = inf;
+pire_cout_prev = inf;
 
 %% Initialisation de l'algorithme
 
@@ -62,7 +66,7 @@ for iteration = 1:nb_iteration
     %CALUL
     for param_i = 1:nb_param % A parralélisé en THREAD
         mat_proba(:,param_i) = (mat_phero(:,param_i).^alpha).*((1./mat_noeuds(:,param_i)).^beta);
-        mat_proba(:,param_i) = mat_proba(:,param_i)./sum(prob(:,param_i));
+        mat_proba(:,param_i) = mat_proba(:,param_i)./sum(mat_proba(:,param_i));
     end
 
     %Calcul du chemin emprunté par chaque fourmi
@@ -86,21 +90,22 @@ for iteration = 1:nb_iteration
             mat_chemin(param_i) = mat_noeuds(noeud_choisit, param_i);
         end
         % Calcul du cout du chemin emprunter
-        FONCTION
-        %
-        disp(['Fourmi n°: ' num2str(A)])
-        disp(['Cout du chemin: ' num2str(cost(A))])
+        mat_cout(fourmi) = costFunction2(mat_chemin, 0);
+        % Affichage des infos
+        clc;
+        disp(['Fourmi n°: ' num2str(fourmi)])
+        disp(['Cout du chemin: ' num2str(mat_cout(fourmi))])
         disp(['Paramètre PID: ' num2str(mat_chemin)])
-        disp(['Iteration: ' num2str(iter)])
+        disp(['Iteration: ' num2str(iteration)])
 
-        if iter~=1
+        if iteration~=1
             disp('_________________')
-            disp(['Meilleur chemin: ' num2str(cost_best)])
+            disp(['Meilleur chemin: ' num2str(meilleur_cout)])
 
             for param_i=1:nb_param
-                mat_chemin(param_i) = mat_noeuds(mat_fourmis(meilleur))
+                mat_chemin(param_i) = mat_noeuds(mat_fourmis(meilleur_cout_ind, param_i), param_i);
             end
-            disp(['Mailleur parametres: ' num2str(mat_chemin])
+            disp(['Meilleur parametres: ' num2str(mat_chemin)])
         end
 
     end
@@ -108,13 +113,25 @@ for iteration = 1:nb_iteration
     [meilleur_cout, meilleur_cout_ind] = min(mat_cout);
 
     %Election de la meilleur fourmi
-    if( meilleur_cout < meilleur_cout_prev) && (iter~=1)
-        [pire_cout, pire_cout_ind] = max(cout);
-        mat_fourmis(pire_cout_ind, :) = m
-
-        %Modification de la matrice des phéromones
-
+    if( meilleur_cout > meilleur_cout_prev) && (iteration~=1)
+        [pire_cout, pire_cout_ind] = max(mat_cout);
+        mat_fourmis(pire_cout_ind, :) = meilleur_fourmi_prev;
+        meilleur_cout = meilleur_cout_prev;
+        meilleur_cout_ind = pire_cout_ind;
+    else
+        meilleur_cout_prev = meilleur_cout;
+        meilleur_fourmi_prev = mat_fourmis(meilleur_cout_ind,:);
+        
     end
+    %Modification de la matrice des phéromones
+    mat_phero_Calcul = zeros(nb_noeud, nb_param);
+    for param_i = 1:nb_param
+        for fourmi = 1:nb_fourmi
+            mat_phero_Calcul(mat_fourmis(fourmi, param_i), param_i) = mat_phero_Calcul(mat_fourmis(fourmi, param_i), param_i) + meilleur_cout/mat_cout(fourmi);
+        end
+    end
+    mat_phero = roh.*mat_phero + mat_phero_Calcul;
+
 end
 
 
