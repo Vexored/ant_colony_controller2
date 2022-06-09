@@ -41,13 +41,13 @@ mat_phero = zeros(nb_noeud, nb_param); %Matrice des phéromones
 mat_phero_Calcul = zeros(nb_noeud, nb_param); %Matrice de calcul des phéromones déposés
 %Couts des chemins A VOIR PLUS TARS
 mat_cout_F = zeros(nb_fourmi, 1);
-meilleur_cout_ind = inf;
+%meilleur_cout_ind = inf;
 meilleur_cout_prev = inf;
-meilleur_cout = inf;
+%meilleur_cout = inf;
 
-pire_cout = inf;
-pire_cout_ind = inf;
-pire_cout_prev = inf;
+%pire_cout = inf;
+%pire_cout_ind = inf;
+%pire_cout_prev = inf;
 
 mat_cout_I = zeros(nb_iteration, 1);
 %% Initialisation de l'algorithme
@@ -84,7 +84,7 @@ for iteration = 1:nb_iteration
             noeud_choisit = 1;
             proba_cumsum = 0;
             for noeud_j = 1:nb_noeud
-                proba_cumsum = proba_cumsum + mat_proba(noeud_j, param_i); %RouletteWheelRandom
+                proba_cumsum = proba_cumsum + mat_proba(noeud_j, param_i); %Rouletmat_cheminteWheelRandom
                 if proba_cumsum >= proba_rand
                     noeud_choisit = noeud_j; %On selectionne le noeud pour la fourmi
                     break
@@ -117,7 +117,7 @@ for iteration = 1:nb_iteration
     end
 
     [meilleur_cout, meilleur_cout_ind] = min(mat_cout_F);
-
+    meilleur_cout_ind
     %Election de la meilleur fourmi
     if( meilleur_cout > meilleur_cout_prev) && (iteration~=1)
         [pire_cout, pire_cout_ind] = max(mat_cout_F);
@@ -127,7 +127,7 @@ for iteration = 1:nb_iteration
     else
         meilleur_cout_prev = meilleur_cout;
         meilleur_fourmi_prev = mat_fourmis(meilleur_cout_ind,:);
-        
+      
     end
     %Modification de la matrice des phéromones
     mat_phero_Calcul = zeros(nb_noeud, nb_param);
@@ -139,7 +139,6 @@ for iteration = 1:nb_iteration
     mat_phero = roh.*mat_phero + mat_phero_Calcul;
     mat_cout_I(iteration)=meilleur_cout;
     
-
 
 end
 toc
