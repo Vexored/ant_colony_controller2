@@ -1,32 +1,6 @@
-%D'après l'algorithme de Mr.Ammar Al-Jodah
-%Il s'agit d'un algorithme AS un peu bizarre
-
-clc;
-clear all;
-%close all;
-tic
-
-%% Paramètres de la colonies de fourmi
-
-nb_iteration = 30; %Nombre d'itération
-nb_fourmi = 30; %Nombre de fourmis
-
-% Paramètre de pondération de la colonie
-
-alpha = 0.8;
-beta = 0.2;
-roh = 0.50; % Coefficient d'évaporation des phéromones
-
-% Paramètres pour la recherche des coefficients du PID
+function [cost_value,mat_cout_I,  param_mat] = main_as_test(nb_iteration, nb_fourmi, nb_noeud, roh, alpha, beta, borne_inferieur, borne_superieur)
 
 nb_param = 3; %Nombre de paramètres -> P I D
-
-%Ici, on borne la valeur des coefficients possibles
-borne_inferieur = [0.1 0.5 0.1]; %Borne inférieur
-borne_superieur = [5 10 0.8]; %Borne supérieur
-
-%Précision voulu pour les coefficients
-nb_noeud = 100; % Plus le nombre de noeuds est élevé, plus la précision est grande
 
 %% Initialisation des matrices et des variables internes
 
@@ -35,8 +9,10 @@ mat_fourmis = zeros(nb_fourmi, nb_param); %Permet de savoir "l'étape" des fourm
 mat_noeuds = zeros(nb_noeud, nb_param); %Création de la "carte"
 mat_chemin = zeros(1, nb_param); %Matrice pour récupéré les noeuds emprunté par la fourmis
 mat_proba = zeros(nb_noeud, nb_param); %Probabilité d'emprunter chaque noeuds.
+param_mat = zeros(nb_iteration,nb_param);
 
 %Matrice phéromones
+
 mat_phero = zeros(nb_noeud, nb_param); %Matrice des phéromones
 mat_phero_Calcul = zeros(nb_noeud, nb_param); %Matrice de calcul des phéromones déposés
 %Couts des chemins A VOIR PLUS TARS
@@ -60,11 +36,9 @@ end
 %Génération et initialisation des phéromones
 mat_phero = ones(nb_noeud, nb_param).*eps; %Initialisation de la part de l'auteur un peu bizarre
 
-%Flo
-%mat_nb_pid_find(1, 3);
-%nb_pid_find = 0;
 
 %% Calcul des itérations
+%figure('name', 'Cout Iteration');
 
 for iteration = 1:nb_iteration
 
@@ -96,23 +70,7 @@ for iteration = 1:nb_iteration
             mat_chemin(param_i) = mat_noeuds(noeud_choisit, param_i);
         end
         % Calcul du cout du chemin emprunter
-        mat_cout_F(fourmi) = costFunction2(mat_chemin, 0);
-        % Affichage des infos
-        clc;
-        disp(['Fourmi n°: ' num2str(fourmi)])
-        disp(['Cout du chemin: ' num2str(mat_cout_F(fourmi))])
-        disp(['Paramètre PID: ' num2str(mat_chemin)])
-        disp(['Iteration: ' num2str(iteration)])
-
-        if iteration~=1
-            disp('_________________')
-            disp(['Meilleur chemin: ' num2str(meilleur_cout)])
-
-            for param_i=1:nb_param
-                mat_chemin(param_i) = mat_noeuds(mat_fourmis(meilleur_cout_ind, param_i), param_i);
-            end
-            disp(['Meilleur parametres: ' num2str(mat_chemin)])
-        end
+        mat_cout_F(fourmi) = costFunction3(mat_chemin);
 
     end
 
@@ -127,7 +85,7 @@ for iteration = 1:nb_iteration
     else
         meilleur_cout_prev = meilleur_cout;
         meilleur_fourmi_prev = mat_fourmis(meilleur_cout_ind,:);
-        
+
     end
     %Modification de la matrice des phéromones
     mat_phero_Calcul = zeros(nb_noeud, nb_param);
@@ -138,22 +96,9 @@ for iteration = 1:nb_iteration
     end
     mat_phero = roh.*mat_phero + mat_phero_Calcul;
     mat_cout_I(iteration)=meilleur_cout;
-    
 
+    param_mat(iteration,:) = mat_chemin;
 
 end
-toc
-
-moteur = tf([1.822],[8.569 1]);
-ref = 100;
-filtre = 100;
-C = pid(mat_chemin(1), mat_chemin(2), mat_chemin(3), filtre);
-%C = pid(4.6812, 0.85185, 0.15465);
-BF = feedback(C*moteur,1);
-t = linspace(0,20,50000);
-figure()
-step(BF*ref,t)
-
-
-
-
+cost_value = meilleur_cout;
+end

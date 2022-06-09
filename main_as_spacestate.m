@@ -1,32 +1,57 @@
+function cost_value = main_as_test(nb_iteration,nb_fourmi, roh, alpha, beta)
+
 %D'après l'algorithme de Mr.Ammar Al-Jodah
 %Il s'agit d'un algorithme AS un peu bizarre
 
-clc;
-clear all;
-%close all;
-tic
+%% SS
+
+S = 0.0154; %m^2
+S_N = 5*10^(-5); %m^2 
+k = 1.6*10^5;
+b = -9.2592;
+g = 9.81;
+
+H_0 = [0.27474 0.0299 0.1368]';
+
+a_13 = 0.4753*S_N*sqrt(2*g);
+a_32 = 0.4833*S_N*sqrt(2*g);
+a_20 = 0.9142*S_N*sqrt(2*g);
+Q_10 = 3.5*10^(-5);
+R_13 = sqrt(abs(H_0(1) - H_0(3)))/a_13;
+R_20 = sqrt(abs(H_0(2)))/a_20;%Ne correspond a aucune H sauf que pas relier a un tuyau
+R_32 = sqrt(abs(H_0(3) - H_0(2)))/a_32;
+
+A = [-1/(S*R_13) 1/(S*R_13) 0; 1/(S*R_13) (-1/S)*((1/R_13) + (1/R_32)) 1/(S*R_32); 0 1/(S*R_32) (-1/S)*((1/R_32) + (1/R_20))];
+B = [1/S; 0; 0];
+C = [1 0 0];
+D = [0];
+
+sys = ss(A, B, C, D);
 
 %% Paramètres de la colonies de fourmi
-
-nb_iteration = 30; %Nombre d'itération
-nb_fourmi = 30; %Nombre de fourmis
-
+% 
+ nb_iteration = 100; %Nombre d'itération
+ nb_fourmi = 30; %Nombre de fourmis
+% 
 % Paramètre de pondération de la colonie
-
-alpha = 0.8;
-beta = 0.2;
-roh = 0.50; % Coefficient d'évaporation des phéromones
+% 
+ alpha = 0.8;
+ beta = 0.2;
+ roh = 0.55; % Coefficient d'évaporation des phéromones
 
 % Paramètres pour la recherche des coefficients du PID
+nb_param = 6; %Nombre de pol des./2
+ 
+%création nombres complexes
 
-nb_param = 3; %Nombre de paramètres -> P I D
+
 
 %Ici, on borne la valeur des coefficients possibles
-borne_inferieur = [0.1 0.5 0.1]; %Borne inférieur
-borne_superieur = [5 10 0.8]; %Borne supérieur
+borne_inferieur = [0 -10 0 -10 0 -10]; %Borne inférieur
+borne_superieur = [-20 10 -20 10 -20 10]; %Borne supérieur
 
 %Précision voulu pour les coefficients
-nb_noeud = 100; % Plus le nombre de noeuds est élevé, plus la précision est grande
+nb_noeud = 1000; % Plus le nombre de noeuds est élevé, plus la précision est grande
 
 %% Initialisation des matrices et des variables internes
 
@@ -61,10 +86,11 @@ end
 mat_phero = ones(nb_noeud, nb_param).*eps; %Initialisation de la part de l'auteur un peu bizarre
 
 %Flo
-%mat_nb_pid_find(1, 3);
+mat_nb_pid_find = zeros(nb_iteration, 3);
 %nb_pid_find = 0;
 
 %% Calcul des itérations
+%figure('name', 'Cout Iteration');
 
 for iteration = 1:nb_iteration
 
@@ -96,7 +122,11 @@ for iteration = 1:nb_iteration
             mat_chemin(param_i) = mat_noeuds(noeud_choisit, param_i);
         end
         % Calcul du cout du chemin emprunter
-        mat_cout_F(fourmi) = costFunction2(mat_chemin, 0);
+        K(1) = complex(mat_chemin(1), mat_chemin(2));
+        K(2) = complex(mat_chemin(3), mat_chemin(4));
+        K(3) = complex(mat_chemin(5), mat_chemin(6));
+
+        mat_cout_F(fourmi) = costFunction3(K, sys);
         % Affichage des infos
         clc;
         disp(['Fourmi n°: ' num2str(fourmi)])
@@ -138,22 +168,8 @@ for iteration = 1:nb_iteration
     end
     mat_phero = roh.*mat_phero + mat_phero_Calcul;
     mat_cout_I(iteration)=meilleur_cout;
-    
-
+ 
+end
+cost_value = meilleur_cout;
 
 end
-toc
-
-moteur = tf([1.822],[8.569 1]);
-ref = 100;
-filtre = 100;
-C = pid(mat_chemin(1), mat_chemin(2), mat_chemin(3), filtre);
-%C = pid(4.6812, 0.85185, 0.15465);
-BF = feedback(C*moteur,1);
-t = linspace(0,20,50000);
-figure()
-step(BF*ref,t)
-
-
-
-
