@@ -1,104 +1,109 @@
-function [cost_value,mat_cout_I,  param_mat] = main_as_test(nb_iteration, nb_fourmi, nb_noeud, roh, alpha, beta, borne_inferieur, borne_superieur)
+function [cost_best,cost_mat, param_mat] = main_as_test(n_iter, NA, n_node, roh, alpha, beta, UB, LB)
 
-nb_param = 3; %Nombre de paramètres -> P I D
 
-%% Initialisation des matrices et des variables internes
+%% ACO paramters
+% n_iter=100; %number of iteration
+% NA=30; % Number of Ants
+% alpha=0.8; % alpha
+% beta=0.2; % beta
+% roh=0.7; % Evaporation rate
+n_param=3; % Number of paramters
+% LB=[0.1 0.5 0.1]; % lower bound
+% UB=[5 10 0.8]; % upper bound
+% n_node=1000; % number of nodes for each param
 
-mat_fourmis = zeros(nb_fourmi, nb_param); %Permet de savoir "l'étape" des fourmis
+%% intializing some variables 
+cost_best_prev=inf;
+ant = zeros(NA,n_param);
+cost = zeros(NA,1);
+tour_selected_param = zeros(1,n_param);
+param_mat = zeros(n_iter,n_param);
+Nodes = zeros(n_node,n_param);
+prob = zeros(n_node, n_param);
 
-mat_noeuds = zeros(nb_noeud, nb_param); %Création de la "carte"
-mat_chemin = zeros(1, nb_param); %Matrice pour récupéré les noeuds emprunté par la fourmis
-mat_proba = zeros(nb_noeud, nb_param); %Probabilité d'emprunter chaque noeuds.
-param_mat = zeros(nb_iteration,nb_param);
-
-%Matrice phéromones
-
-mat_phero = zeros(nb_noeud, nb_param); %Matrice des phéromones
-mat_phero_Calcul = zeros(nb_noeud, nb_param); %Matrice de calcul des phéromones déposés
-%Couts des chemins A VOIR PLUS TARS
-mat_cout_F = zeros(nb_fourmi, 1);
-meilleur_cout_ind = inf;
-meilleur_cout_prev = inf;
-meilleur_cout = inf;
-
-pire_cout = inf;
-pire_cout_ind = inf;
-pire_cout_prev = inf;
-
-mat_cout_I = zeros(nb_iteration, 1);
-%% Initialisation de l'algorithme
-
-%Generation des noeuds
-for i = 1:nb_param % A parallélisé en THREAD
-    mat_noeuds(:,i) = linspace(borne_inferieur(i), borne_superieur(i), nb_noeud);
+%% Generating Nodes
+T=ones(n_node,n_param).*eps; % Phormone Matrix
+dT=zeros(n_node,n_param); % Change of Phormone
+for i=1:n_param
+    Nodes(:,i) =linspace(LB(i),UB(i),n_node); % Node generation at equal spaced points
 end
 
-%Génération et initialisation des phéromones
-mat_phero = ones(nb_noeud, nb_param).*eps; %Initialisation de la part de l'auteur un peu bizarre
-
-
-%% Calcul des itérations
-%figure('name', 'Cout Iteration');
-
-for iteration = 1:nb_iteration
-
-    %Calcul de la probabilité d'emprunter chaque noeud -- A TESTER UN AUTRE
-    %CALUL
-    for param_i = 1:nb_param % A parralélisé en THREAD
-        mat_proba(:,param_i) = (mat_phero(:,param_i).^alpha).*((1./mat_noeuds(:,param_i)).^beta);
-        mat_proba(:,param_i) = mat_proba(:,param_i)./sum(mat_proba(:,param_i));
+%% Iteration loop
+for iter=1:n_iter
+  
+    for tour_i=1:n_param
+        prob(:,tour_i)= (T(:,tour_i).^alpha) .* ((1./Nodes(:,tour_i)).^beta);
+        prob(:,tour_i)=prob(:,tour_i)./sum(prob(:,tour_i));
     end
-
-    %Calcul du chemin emprunté par chaque fourmi
-    for fourmi = 1:nb_fourmi %A parralélisé en THREAD
-        %Pour chaque paramètre
-        for param_i = 1:nb_param
-            %On choisit une proba au hasard
-            proba_rand = rand;
-            noeud_choisit = 1;
-            proba_cumsum = 0;
-            for noeud_j = 1:nb_noeud
-                proba_cumsum = proba_cumsum + mat_proba(noeud_j, param_i); %RouletteWheelRandom
-                if proba_cumsum >= proba_rand
-                    noeud_choisit = noeud_j; %On selectionne le noeud pour la fourmi
+    
+    for A=1:NA
+        for tour_i=1:n_param
+            node_sel=rand;
+            node_ind=1;
+            prob_sum=0;
+            for j=1:n_node
+                prob_sum=prob_sum+prob(j,tour_i);
+                if prob_sum>=node_sel
+                    node_ind=j;
                     break
                 end
             end
-            %On attribu le noeud a la fourmi et on enregistre le chemin
-            %emprunter
-            mat_fourmis(fourmi, param_i) = noeud_choisit;
-            mat_chemin(param_i) = mat_noeuds(noeud_choisit, param_i);
+            ant(A,tour_i)=node_ind;
+            tour_selected_param(tour_i) = Nodes(node_ind, tour_i);
         end
-        % Calcul du cout du chemin emprunter
-        mat_cout_F(fourmi) = costFunction3(mat_chemin);
-
+        
+        cost(A)=costFunction3(tour_selected_param);
+        %clc
+        %disp(['Ant number: ' num2str(A)])
+        %disp(['Ant Cost: ' num2str(cost(A))])
+        %disp(['Ant Paramters: ' num2str(tour_selected_param)])
+        if iter~=1
+        %disp(['iteration: ' num2str(iter)])
+        %disp('_________________')
+        %disp(['Best cost: ' num2str(cost_best)])
+        for i=1:n_param
+            tour_selected_param(i) = Nodes(ant(cost_best_ind,i), i);
+        end
+        %disp(['Best paramters: ' num2str(tour_selected_param)])
+        end
+        
     end
-
-    [meilleur_cout, meilleur_cout_ind] = min(mat_cout_F);
-
-    %Election de la meilleur fourmi
-    if( meilleur_cout > meilleur_cout_prev) && (iteration~=1)
-        [pire_cout, pire_cout_ind] = max(mat_cout_F);
-        mat_fourmis(pire_cout_ind, :) = meilleur_fourmi_prev;
-        meilleur_cout = meilleur_cout_prev;
-        meilleur_cout_ind = pire_cout_ind;
+    [cost_best,cost_best_ind]=min(cost);
+    
+    % Elitsem
+    if (cost_best>cost_best_prev) && (iter~=1)
+        [cost_worst,cost_worst_ind]=max(cost);
+        ant(cost_worst_ind,:)=best_prev_ant;
+        cost_best=cost_best_prev;
+        cost_best_ind=cost_worst_ind;
     else
-        meilleur_cout_prev = meilleur_cout;
-        meilleur_fourmi_prev = mat_fourmis(meilleur_cout_ind,:);
-
+        cost_best_prev=cost_best;
+        best_prev_ant=ant(cost_best_ind,:);
     end
-    %Modification de la matrice des phéromones
-    mat_phero_Calcul = zeros(nb_noeud, nb_param);
-    for param_i = 1:nb_param
-        for fourmi = 1:nb_fourmi
-            mat_phero_Calcul(mat_fourmis(fourmi, param_i), param_i) = mat_phero_Calcul(mat_fourmis(fourmi, param_i), param_i) + meilleur_cout/mat_cout_F(fourmi);
+    
+    dT=zeros(n_node,n_param); % Change of Phormone
+    for tour_i=1:n_param
+        for A=1:NA
+            dT(ant(A,tour_i),tour_i)=dT(ant(A,tour_i),tour_i)+cost_best/cost(A);
         end
     end
-    mat_phero = roh.*mat_phero + mat_phero_Calcul;
-    mat_cout_I(iteration)=meilleur_cout;
-
-    param_mat(iteration,:) = mat_chemin;
-
+    
+    T= roh.*T + dT;
+  
+    %% Plots , this section will not effect the algorithem
+    % you can remove it to speed up the run
+    cost_mat(iter)=cost_best;
+%     figure(1)
+%     plot(cost_mat)
+%     figure(2)
+%     for i=1:n_param
+%             tour_selected_param(i) = Nodes(ant(cost_best_ind,i), i);
+%     end
+    %cost_func(tour_selected_param,1);
+    %% store data 
+    param_mat(iter,:) = tour_selected_param;
+    %save('ACO_data.mat','cost_mat','param_mat')
+    %drawnow
 end
-cost_value = meilleur_cout;
+
 end

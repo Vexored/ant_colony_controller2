@@ -9,22 +9,23 @@ close all;
 
 
 %Les alpha
-alpha = linspace(0.1,2,20);
-
+%alpha = linspace(0.1,2,20);
+alpha=1.8;
 %Les beta
 beta = linspace(0.1, 2, 20);
-
+beta=0.8;
 %Les ponderation.
 roh = linspace(0.1, 1, 10);
-
+roh=0.4;
 %Reglage algo
-algo_iteration = 15;
+algo_iteration = 50;
 algo_fourmis = 30;
+nb_test = 4;
 
-nb_noeuds = 1000;
+nb_noeuds = 100000;
 
-borne_inferieur = [0.1 0.5 0.1]; %Borne inférieur
-borne_superieur = [5 10 0.8]; %Borne supérieur
+borne_inferieur = [0.0001 0.0001 0.0001]; %Borne inférieur
+borne_superieur = [10 20 2]; %Borne supérieur
 
 nb_iteration = length(roh)*length(alpha)*length(beta);
 iteration = 1;
@@ -44,12 +45,12 @@ start_tic = tic;
 for R = 1:length(roh)
     for A = 1:length(alpha)
         for B = 1:length(beta)
-            sim = struct('test', cell(1,12), 'cout', cell(1,12), 'mat_cout', cell(1,12),'pid',cell(1,12), 'temps',cell(1,12));
+            sim = struct('test', cell(1,nb_test), 'cout', cell(1,nb_test), 'mat_cout', cell(1,nb_test),'pid',cell(1,nb_test), 'temps',cell(1,nb_test));
             start2_tic = tic;
             disp(['Simulation n°', num2str(iteration), ' / ', num2str(nb_iteration),': En cours...']);
             disp(['Paramètres: Roh: ', num2str(roh(R)), ' Alpha: ', num2str(alpha(A)),' Beta: ', num2str(beta(B))])
 
-            parfor Test = 1:1
+            parfor Test = 1:nb_test
                 start3_tic = tic;
                 [cout, mat_cout, pid] = main_as_test(algo_iteration, algo_fourmis, nb_noeuds, roh(R), alpha(A), beta(B), borne_superieur, borne_inferieur);
                 mat_cout(A ,B, R) = cout;
@@ -75,5 +76,5 @@ end
 data.simulation = simulation;
 data.temps = toc(start_tic);
 
-save('data.mat', 'data');
-save('mat_cout.mat', 'mat_cout');
+save('data2.mat', 'data');
+save('mat_cout2.mat', 'mat_cout');

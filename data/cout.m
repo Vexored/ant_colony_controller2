@@ -16,7 +16,7 @@ for i = 2401:2800 %Choix ponderation Ici roh = 0.7
         end
     MyMatrix = vertcat(data.simulation(i).as(1:12).cout);
     matrice_cout(a,b) = min(MyMatrix);
-        b = b + 1;ant_colony_controller
+        b = b + 1;
 end
 surf(matrice_cout)
 xlabel('Beta')
